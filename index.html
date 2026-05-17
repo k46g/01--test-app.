@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>درب المسلم - النسخة الكاملة أوفلاين</title>
+    <title>درب المسلم - النسخة الكاملة</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Amiri&display=swap" rel="stylesheet">
     <script>tailwind.config = { darkMode: 'class' }</script>
@@ -18,7 +18,6 @@
         html.dark body {
             background: linear-gradient(135deg, #111827 0%, #064e3b 100%);
         }
-        /* خط المصحف الشريف وضبط المحاذاة */
         .quran-font { 
             font-family: 'Amiri', serif; 
             line-height: 2.4; 
@@ -38,16 +37,9 @@
             opacity: 1;
             transform: scale(1) translateY(0);
         }
-        .green-card { 
-            background: linear-gradient(135deg, #059669, #064e3b); 
-            border-radius: 2rem; 
-        }
-        .surah-card {
-            transition: all 0.2s ease;
-        }
-        .surah-card:active {
-            transform: scale(0.95);
-        }
+        .green-card { background: linear-gradient(135deg, #059669, #064e3b); border-radius: 2rem; }
+        .surah-card { transition: all 0.2s ease; }
+        .surah-card:active { transform: scale(0.95); }
         .nav-bar { 
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); display: flex; justify-content: space-around; 
@@ -76,7 +68,7 @@
             <button onclick="showPage('quranPage')" class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] text-center shadow-md border border-gray-100 dark:border-gray-700/50">
                 <span class="text-4xl block mb-2">📖</span>
                 <p class="font-bold text-sm text-emerald-900 dark:text-emerald-300">المصحف كاملاً</p>
-                <p class="text-[10px] opacity-50 mt-1">114 سورة بدون نت</p>
+                <p class="text-[10px] opacity-50 mt-1">114 سورة مرتبة</p>
             </button>
             <button onclick="showPage('azkarPage')" class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] text-center shadow-md border border-gray-100 dark:border-gray-700/50">
                 <span class="text-4xl block mb-2">📿</span>
@@ -108,7 +100,7 @@
         <input id="searchSurah" oninput="filterSurahs()" type="text" placeholder="ابحث عن اسم السورة..." class="w-full p-4 mb-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-right outline-none focus:border-emerald-500 shadow-sm">
         
         <div id="surahList" class="space-y-2 max-h-[65vh] overflow-y-auto pr-1">
-            <p class="text-center opacity-50 py-10">جاري تحميل المصحف الشريف من ملف quran.json...</p>
+            <p class="text-center opacity-50 py-10">جاري جلب المصحف الشريف...</p>
         </div>
     </div>
 
@@ -117,8 +109,7 @@
             <button onclick="showPage('quranPage')" class="text-emerald-600 font-bold bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm">← الفهرس</button>
             <span id="surahMeta" class="text-xs opacity-60 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 px-3 py-1 rounded-full font-bold"></span>
         </div>
-        <div id="surahContent" class="bg-white dark:bg-gray-800 p-6 rounded-[2.5rem] quran-font text-2xl text-right shadow-md border border-gray-100 dark:border-gray-700 select-text">
-            </div>
+        <div id="surahContent" class="bg-white dark:bg-gray-800 p-6 rounded-[2.5rem] quran-font text-2xl text-right shadow-md border border-gray-100 dark:border-gray-700 select-text"></div>
     </div>
 
     <nav class="nav-bar">
@@ -134,20 +125,23 @@
 <script>
     let quranData = [];
 
-    // الدالة الأساسية لجلب ملف القرآن المحلي المرتبط بالتسمية الصحيحة quran.json
+    // محرك جلب البيانات الذكي والمنقذ
     async function loadQuranData() {
+        // المحاولة الأولى: نجرب نقرأ من ملفك المحلي مباشرة
         try {
-            // إضافة كسر الكاش لضمان قراءة الملف المحدث فوراً من السيرفر وبدون كاش متصفح قديم
             const response = await fetch('quran.json?v=' + new Date().getTime());
             quranData = await response.json();
             renderIndex(quranData); 
         } catch (error) {
-            console.error("خطأ في تحميل ملف القرآن:", error);
-            document.getElementById('surahList').innerHTML = `
-                <div class="p-4 bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 rounded-2xl text-center text-sm font-bold">
-                    تنبيه: لم يتم العثور على ملف بالاسم الصحيح <code class="bg-white px-1 py-0.5 rounded border">quran.json</code> بجانب هذا الكود.<br>
-                    تأكد أن الاسم مطابق 100% وبدون مسافات أو نقاط زائدة لتختفي هذه الرسالة.
-                </div>`;
+            console.log("الملف المحلي لم يجهز بعد على جيت هاب بيج، جاري الانتقال للخطة البديلة المباشرة...");
+            // المحاولة الثانية (الخطة البديلة): إذا جيت هاب معلق، نسحب النص فورا من السيرفر الموثق مباشرة لتشتغل الشاشة عندك الحين
+            try {
+                const backupResponse = await fetch('https://raw.githubusercontent.com/risan/quran-json/master/data/quran.json');
+                quranData = await backupResponse.json();
+                renderIndex(quranData);
+            } catch (backupError) {
+                document.getElementById('surahList').innerHTML = `<p class="text-center text-red-500 font-bold p-4">يرجى التحقق من الاتصال بالإنترنت لتشغيل المصحف لأول مرة.</p>`;
+            }
         }
     }
 
@@ -174,15 +168,11 @@
     function openSurah(id) {
         showPage('surahView');
         const surah = quranData.find(s => s.id === id);
-        
         if (surah) {
             document.getElementById('surahMeta').innerText = `ترتيبها: ${surah.id} | آياتها: ${surah.verses.length}`;
-            
-            // البسملة لجميع السور ما عدا التوبة والفاتحة
             let basmalah = (id !== 1 && id !== 9) ? `<p class="text-center text-2xl text-emerald-600 dark:text-emerald-400 mb-6 font-serif">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>` : '';
-            
-            // ربط وعرض نصوص الآيات بدقة مع أرقامها المرتبة
-            let versesText = surah.verses.map(v => `${v.text} <span class="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-lg mx-1">﴿${v.id}﴾</span>`).join(' ');
+            let versesText = surah.verses.map(v => `${v.text} <span class="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-lg mx-1">﴿${v.id}
+            } ﴿${v.id}﴾</span>`).join(' ');
             
             document.getElementById('surahContent').innerHTML = `
                 <h2 class="text-center mb-1 text-emerald-800 dark:text-emerald-400 font-bold text-2xl font-serif">سورة ${surah.name}</h2>
@@ -199,9 +189,7 @@
         renderIndex(filtered);
     }
 
-    function toggleDarkMode() { 
-        document.documentElement.classList.toggle('dark'); 
-    }
+    function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
 
     function init() {
         const now = new Date();
