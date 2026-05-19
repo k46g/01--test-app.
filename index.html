@@ -1,203 +1,1505 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>درب المسلم - النسخة الكاملة</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Amiri&display=swap" rel="stylesheet">
-    <script>tailwind.config = { darkMode: 'class' }</script>
-    <style>
-        body { 
-            font-family: 'Tajawal', sans-serif; 
-            transition: background-color 0.3s; 
-            background: linear-gradient(135deg, #f3f4f6 0%, #ecfdf5 100%);
-            background-attachment: fixed;
-            overflow-x: hidden;
-        }
-        html.dark body {
-            background: linear-gradient(135deg, #111827 0%, #064e3b 100%);
-        }
-        .quran-font { 
-            font-family: 'Amiri', serif; 
-            line-height: 2.4; 
-            text-align: justify; 
-            text-justify: inter-word; 
-        }
-        .page { 
-            display: none; 
-            min-height: 100vh; 
-            padding-bottom: 100px; 
-            opacity: 0;
-            transform: scale(0.98) translateY(10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .page.active { 
-            display: block; 
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
-        .green-card { background: linear-gradient(135deg, #059669, #064e3b); border-radius: 2rem; }
-        .surah-card { transition: all 0.2s ease; }
-        .surah-card:active { transform: scale(0.95); }
-        .nav-bar { 
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); display: flex; justify-content: space-around; 
-            padding: 12px; z-index: 1000; border-radius: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
-        }
-        .dark .nav-bar { background: rgba(31, 41, 55, 0.85); }
-    </style>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#059669">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="درب المسلم">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>درب المسلم - مصحف، أذكار، صلوات</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Amiri&display=swap" rel="stylesheet">
+<script>tailwind.config = { darkMode: 'class' }</script>
+<style>
+/* ══════════════════════════════════════════════
+   المتغيرات والقاعدة
+══════════════════════════════════════════════ */
+:root {
+  --green:        #059669;
+  --green-dark:   #064e3b;
+  --green-light:  #ecfdf5;
+  --font-quran:   1.3rem;
+
+  /* ألوان الزجاج */
+  --glass-bg:     rgba(255,255,255,0.55);
+  --glass-border: rgba(255,255,255,0.45);
+  --glass-shadow: 0 4px 20px rgba(5,150,105,0.08);
+
+  /* تحسين الأداء: تعريف الانتقالات مركزياً */
+  --transition-fast:   0.2s ease;
+  --transition-normal: 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  --transition-spring: 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* ══════════ إعادة تعيين مبسّطة ══════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ══════════ الجسم - بدون background-attachment:fixed (سبب الثقل الأول) ══════════ */
+body {
+  font-family: 'Tajawal', sans-serif;
+  overflow-x: hidden;
+}
+
+/* خلفية ثابتة بكفاءة عبر pseudo-element واحد */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 50%, #f3f4f6 100%);
+  pointer-events: none;
+}
+html.dark body::before {
+  background: linear-gradient(135deg, #0f172a 0%, #064e3b 60%, #111827 100%);
+}
+
+/* ══════════ الكرات العائمة - مُحسَّنة للأداء ══════════ */
+.bg-orbs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+  transform: translateZ(0);
+}
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+  opacity: 0.13;
+  will-change: transform;
+  transform: translateZ(0);
+  animation: orbFloat 14s ease-in-out infinite;
+}
+html.dark .orb { opacity: 0.08; }
+
+.orb-1 { width:320px; height:320px; background:radial-gradient(circle,#34d399,#059669); top:-80px; right:-60px; animation-delay:0s; }
+.orb-2 { width:250px; height:250px; background:radial-gradient(circle,#6ee7b7,#064e3b); bottom:80px; left:-50px; animation-delay:-5s; }
+.orb-3 { width:180px; height:180px; background:radial-gradient(circle,#a7f3d0,#10b981); top:45%; right:25%; animation-delay:-9s; }
+
+@keyframes orbFloat {
+  0%,100% { transform: translateZ(0) translateY(0) scale(1); }
+  50%      { transform: translateZ(0) translateY(-25px) scale(1.05); }
+}
+
+/* ══════════ الصفحات ══════════ */
+.page {
+  display: none;
+  min-height: 100vh;
+  padding-bottom: 130px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+.page.active   { display: block; }
+.page.will-animate { will-change: transform, opacity; }
+
+@keyframes slideInLeft  { from { opacity:0; transform:translateX(-24px) } to { opacity:1; transform:translateX(0) } }
+@keyframes slideInRight { from { opacity:0; transform:translateX(24px)  } to { opacity:1; transform:translateX(0) } }
+
+.page.animate-in   { animation: slideInLeft  0.35s var(--transition-normal) both; }
+.page.animate-back { animation: slideInRight 0.35s var(--transition-normal) both; }
+
+/* ══════════ البطاقة الخضراء ══════════ */
+.green-card {
+  background: linear-gradient(135deg, rgba(5,150,105,0.85), rgba(6,78,59,0.90));
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border-radius: 2.5rem;
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 8px 28px rgba(5,150,105,0.18);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+}
+.green-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M20 20h4v4h-4zm0-20h4v4h-4zM0 20h4v4H0zM0 0h4v4H0z'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ══════════ بطاقات الأذكار ══════════ */
+.zekr-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border-radius: 1.4rem;
+  padding: 18px;
+  border-right: 4px solid var(--green);
+  border-top: 1px solid var(--glass-border);
+  border-left: 1px solid rgba(255,255,255,0.25);
+  margin-bottom: 12px;
+  box-shadow: var(--glass-shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+html.dark .zekr-card {
+  background: rgba(17,24,39,0.55);
+  border-top-color: rgba(255,255,255,0.07);
+  color: white;
+}
+@media (hover: hover) {
+  .zekr-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(5,150,105,0.12); }
+}
+
+/* ══════════ أزرار الزجاج ══════════ */
+.glass-btn {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.6);
+  transition: transform var(--transition-spring), box-shadow var(--transition-fast);
+}
+html.dark .glass-btn {
+  background: rgba(17,24,39,0.55);
+  border-color: rgba(255,255,255,0.08);
+}
+@media (hover: hover) {
+  .glass-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 28px rgba(5,150,105,0.16), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+}
+.glass-btn:active { transform: scale(0.96) !important; }
+
+/* ══════════ شريط التنقل ══════════ */
+.nav-bar {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 88%;
+  max-width: 380px;
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,0.45);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.09), inset 0 1px 0 rgba(255,255,255,0.7);
+  display: flex;
+  justify-content: space-around;
+  padding: 10px;
+  z-index: 1000;
+  border-radius: 2rem;
+  transition: transform 0.4s var(--transition-normal), opacity 0.3s ease;
+  will-change: transform;
+}
+html.dark .nav-bar {
+  background: rgba(15,23,42,0.70);
+  border-color: rgba(255,255,255,0.06);
+}
+.nav-hidden .nav-bar { transform: translate(-50%, 140%); opacity: 0; pointer-events: none; }
+
+.nav-indicator {
+  position: absolute;
+  inset: 8px;
+  width: calc(50% - 14px);
+  background: rgba(5,150,105,0.15);
+  border-radius: 1.4rem;
+  z-index: 1;
+  transition: transform 0.4s cubic-bezier(0.25,1,0.5,1);
+  right: 10px;
+}
+
+/* ══════════ أزرار العداد ══════════ */
+.count-btn {
+  border-radius: 0.9rem;
+  width: 100%;
+  font-weight: bold;
+  padding: 11px;
+  transition: transform var(--transition-spring), box-shadow var(--transition-fast);
+  cursor: pointer;
+}
+.count-btn.active {
+  background: rgba(236,253,245,0.85);
+  backdrop-filter: blur(8px);
+  color: var(--green);
+  border: 1px solid rgba(16,185,129,0.3);
+}
+html.dark .count-btn.active { background: rgba(6,78,59,0.6); color: #ecfdf5; }
+.count-btn.active:active { transform: scale(0.96); }
+.count-btn.done {
+  background: rgba(241,245,249,0.7);
+  color: #94a3b8;
+}
+html.dark .count-btn.done { background: rgba(55,65,81,0.5); color: #6b7280; }
+
+/* ══════════ بطاقات المهام ══════════ */
+.missed-task-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.6);
+  border-radius: 1rem;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: transform var(--transition-spring), box-shadow var(--transition-fast);
+  user-select: none;
+}
+html.dark .missed-task-card { background: rgba(17,24,39,0.55); border-color: rgba(255,255,255,0.08); }
+@media (hover: hover) {
+  .missed-task-card:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 10px 28px rgba(5,150,105,0.15);
+  }
+}
+.missed-task-card:active    { transform: scale(0.97); }
+.missed-task-card.done-card { opacity: 0.6; }
+
+/* ══════════ خط القرآن ══════════ */
+.quran-font {
+  font-family: 'Amiri', serif;
+  line-height: 2.2;
+  font-size: var(--font-quran);
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+/* ══════════ سلايدر حجم الخط ══════════ */
+.font-slider-container {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.3rem;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--glass-shadow);
+}
+html.dark .font-slider-container { background: rgba(17,24,39,0.5); border-color: rgba(255,255,255,0.07); }
+
+.slider-track-wrapper { position: relative; padding: 18px 8px 8px; }
+.slider-track {
+  position: relative;
+  height: 4px;
+  background: rgba(5,150,105,0.15);
+  border-radius: 2px;
+  margin: 0 8px;
+}
+html.dark .slider-track { background: rgba(5,150,105,0.22); }
+.slider-fill {
+  position: absolute;
+  left: 0; top: 0;
+  height: 100%;
+  background: linear-gradient(to right, #059669, #34d399);
+  border-radius: 2px;
+  transition: width 0.12s ease;
+  pointer-events: none;
+}
+.slider-dots {
+  position: absolute;
+  top: 50%; left: 8px; right: 8px;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.slider-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: rgba(5,150,105,0.25);
+  transition: background 0.18s, transform 0.18s;
+  flex-shrink: 0;
+}
+.slider-dot.active { background: var(--green); transform: scale(1.35); }
+.slider-bubble {
+  position: absolute;
+  top: -6px;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #059669, #064e3b);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: bold;
+  font-family: 'Tajawal', sans-serif;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(5,150,105,0.3);
+  transition: left 0.12s ease;
+  pointer-events: none;
+}
+.slider-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -3px; left: 50%;
+  transform: translateX(-50%);
+  border: 3px solid transparent;
+  border-top-color: #064e3b;
+}
+.font-range-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  direction: ltr;
+}
+.font-size-preview {
+  font-family: 'Amiri', serif;
+  color: var(--green);
+  font-weight: bold;
+  transition: font-size 0.25s ease;
+  line-height: 1.4;
+}
+html.dark .font-size-preview { color: #34d399; }
+
+/* ══════════ ترقيم صفحات السورة ══════════ */
+.surah-page-btn {
+  padding: 7px 16px;
+  border-radius: 0.75rem;
+  font-weight: bold;
+  font-size: 0.82rem;
+  transition: transform var(--transition-spring), box-shadow var(--transition-fast);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+}
+html.dark .surah-page-btn { background: rgba(30,41,59,0.55); color: white; }
+.surah-page-btn.current {
+  background: linear-gradient(135deg, #059669, #064e3b);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(5,150,105,0.3);
+}
+@media (hover: hover) { .surah-page-btn:hover { transform: scale(1.05); } }
+
+/* ══════════ منتقي الوقت (موحد لجميع الإعدادات) ══════════ */
+.time-picker-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(5,150,105,0.18);
+  border-radius: 1.3rem;
+  padding: 12px 8px;
+  direction: ltr;
+}
+html.dark .time-picker-container { background: rgba(15,23,42,0.5); border-color: rgba(5,150,105,0.28); }
+
+.time-picker-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.time-picker-scroll {
+  height: 120px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 52px;
+  position: relative;
+}
+.time-picker-scroll::-webkit-scrollbar { display: none; }
+.time-picker-item {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+  font-family: 'Tajawal', sans-serif;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: color 0.15s, font-size 0.15s;
+  color: #94a3b8;
+  user-select: none;
+}
+html.dark .time-picker-item { color: #6b7280; }
+.time-picker-item.selected { color: var(--green); font-size: 1.45rem; background: rgba(5,150,105,0.08); }
+.time-picker-spacer { height: 40px; flex-shrink: 0; }
+.time-picker-separator { font-size: 1.7rem; font-weight: bold; color: var(--green); margin-bottom: 4px; }
+.time-picker-label { font-size: 0.6rem; font-weight: bold; color: var(--green); opacity: 0.7; margin-top: 4px; font-family: 'Tajawal', sans-serif; }
+.time-picker-selector-line {
+  position: absolute;
+  left: 3px; right: 3px; top: 40px;
+  height: 40px;
+  border-top: 1.5px solid rgba(5,150,105,0.28);
+  border-bottom: 1.5px solid rgba(5,150,105,0.28);
+  border-radius: 0.4rem;
+  pointer-events: none;
+  z-index: 2;
+}
+.time-ampm-btn { display: flex; flex-direction: column; gap: 5px; }
+.time-ampm-option {
+  padding: 7px 10px;
+  border-radius: 0.7rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  font-family: 'Tajawal', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s;
+  background: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #94a3b8;
+  text-align: center;
+}
+html.dark .time-ampm-option { background: rgba(30,41,59,0.4); color: #6b7280; }
+.time-ampm-option.active {
+  background: linear-gradient(135deg, #059669, #064e3b);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(5,150,105,0.28);
+}
+.time-display-preview {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--green);
+  font-family: 'Tajawal', sans-serif;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+html.dark .time-display-preview { color: #34d399; }
+
+/* ══════════ حقل الإدخال ══════════ */
+.time-input-styled {
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(5,150,105,0.22);
+  border-radius: 1rem;
+  padding: 11px 14px;
+  width: 100%;
+  font-size: 1.1rem;
+  font-family: 'Tajawal', sans-serif;
+  color: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+html.dark .time-input-styled { background: rgba(30,41,59,0.5); border-color: rgba(5,150,105,0.3); color: white; }
+.time-input-styled:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(5,150,105,0.12);
+}
+
+/* ══════════ النوافذ المنبثقة ══════════ */
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.custom-modal-overlay.open { opacity: 1; pointer-events: all; }
+.custom-modal-box {
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: 0 20px 56px rgba(5,150,105,0.16), inset 0 1px 0 rgba(255,255,255,0.8);
+  border-radius: 2.2rem;
+  padding: 24px;
+  width: 100%;
+  max-width: 310px;
+  transform: scale(0.88) translateY(24px);
+  transition: transform 0.4s var(--transition-spring), opacity 0.25s ease;
+  opacity: 0;
+}
+html.dark .custom-modal-box { background: rgba(15,23,42,0.85); border-color: rgba(255,255,255,0.08); color: white; }
+.custom-modal-overlay.open .custom-modal-box { transform: scale(1) translateY(0); opacity: 1; }
+
+.modal-btn-confirm {
+  background: linear-gradient(135deg, #059669, #064e3b);
+  color: white;
+  border-radius: 0.9rem;
+  padding: 11px;
+  font-weight: bold;
+  width: 100%;
+  transition: transform var(--transition-spring), box-shadow var(--transition-fast);
+  box-shadow: 0 4px 14px rgba(5,150,105,0.32);
+}
+@media (hover: hover) { .modal-btn-confirm:hover { transform: scale(1.03); box-shadow: 0 7px 20px rgba(5,150,105,0.42); } }
+.modal-btn-confirm:active { transform: scale(0.97); }
+
+.modal-btn-cancel {
+  background: rgba(241,245,249,0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(226,232,240,0.6);
+  color: #64748b;
+  border-radius: 0.9rem;
+  padding: 11px;
+  font-weight: bold;
+  width: 100%;
+  transition: transform var(--transition-fast);
+}
+html.dark .modal-btn-cancel { background: rgba(55,65,81,0.6); color: #9ca3af; }
+@media (hover: hover) { .modal-btn-cancel:hover { transform: scale(1.02); } }
+
+.modal-icon {
+  width: 58px; height: 58px;
+  background: linear-gradient(135deg, rgba(5,150,105,0.12), rgba(5,150,105,0.04));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  margin: 0 auto 14px;
+  border: 1px solid rgba(5,150,105,0.18);
+}
+
+/* ══════════ منطقة تمرير الإعدادات ══════════ */
+.settings-scroll-area {
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.settings-scroll-area::-webkit-scrollbar { display: none; }
+
+/* ══════════ التوست ══════════ */
+#toast {
+  position: fixed;
+  bottom: 106px;
+  left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  background: linear-gradient(135deg, rgba(5,150,105,0.92), rgba(6,78,59,0.96));
+  backdrop-filter: blur(14px);
+  color: white;
+  padding: 11px 22px;
+  border-radius: 2rem;
+  font-size: 0.82rem;
+  font-weight: bold;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.4s var(--transition-spring);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 6px 20px rgba(5,150,105,0.28);
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ══════════ شارة الإشعارات ══════════ */
+.notification-badge {
+  width: 7px; height: 7px;
+  background: #34d399;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px; left: 3px;
+  animation: pulse 2.2s infinite;
+}
+@keyframes pulse {
+  0%,100% { transform:scale(1); opacity:1; }
+  50%      { transform:scale(1.5); opacity:0.55; }
+}
+
+/* ══════════ مؤشر السحب ══════════ */
+.swipe-hint {
+  position: fixed;
+  top: 50%; left: 0;
+  transform: translateY(-50%);
+  width: 3px; height: 52px;
+  background: rgba(5,150,105,0.28);
+  border-radius: 0 3px 3px 0;
+  z-index: 500;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+.swipe-hint.visible { opacity: 1; }
+
+/* ══════════ البروفايل ══════════ */
+#profileHeaderCard {
+  transition: background 0.4s ease;
+  background-size: cover;
+  background-position: center;
+}
+
+/* ══════════ أيقونات SVG مخصصة ══════════ */
+.icon-svg {
+  display: inline-block;
+  width: 1em; height: 1em;
+  vertical-align: middle;
+  fill: currentColor;
+}
+
+/* ميزة جديدة: إنجاز الختم */
+.khatm-progress-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    border-radius: 1.5rem;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--glass-border);
+}
+.khatm-surah-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.3);
+    margin-bottom: 6px;
+    border-radius: 1rem;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+html.dark .khatm-surah-item { background: rgba(0,0,0,0.2); }
+.khatm-surah-name { font-weight: bold; font-size: 0.85rem; }
+.khatm-check {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+}
+.khatm-check.completed {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+}
+/* bookmark */
+.bookmark-star {
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 8px;
+}
+.bookmark-star.active { color: #f59e0b; stroke: #f59e0b; fill: #f59e0b; }
+.bookmark-highlight {
+    background: linear-gradient(90deg, rgba(5,150,105,0.1), rgba(5,150,105,0.05));
+    border-right: 3px solid var(--green);
+}
+/* tabs */
+.quran-tab {
+    background: rgba(255,255,255,0.4);
+    backdrop-filter: blur(12px);
+}
+html.dark .quran-tab { background: rgba(30,41,59,0.4); }
+</style>
 </head>
 <body class="dark:text-white">
 
-<div class="max-w-md mx-auto relative min-h-screen p-4">
+<!-- الكرات العائمة -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
 
-    <div id="homePage" class="page active">
-        <div class="flex justify-between items-center mb-6 mt-4">
-            <h1 class="text-xl font-bold text-emerald-800 dark:text-emerald-400">درب المسلم 🌤️</h1>
-            <button onclick="toggleDarkMode()" class="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-md">🌓</button>
-        </div>
-        
-        <div class="green-card p-6 mb-8 text-white shadow-xl relative overflow-hidden">
-            <p class="text-xs opacity-70 mb-1" id="todayDate">جاري تحميل التاريخ...</p>
-            <h2 class="text-lg font-bold mb-2 text-yellow-300">تذكير اليوم</h2>
-            <div class="text-lg quran-font">"فَاذْكُرُونِي أَذْكُرْكُمْ وَاشْكُرُوا لِي وَلَا تَكْفُرُونِ"</div>
-        </div>
+<!-- التوست -->
+<div id="toast" role="status" aria-live="polite"></div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <button onclick="showPage('quranPage')" class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] text-center shadow-md border border-gray-100 dark:border-gray-700/50">
-                <span class="text-4xl block mb-2">📖</span>
-                <p class="font-bold text-sm text-emerald-900 dark:text-emerald-300">المصحف كاملاً</p>
-                <p class="text-[10px] opacity-50 mt-1">114 سورة مرتبة</p>
-            </button>
-            <button onclick="showPage('azkarPage')" class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] text-center shadow-md border border-gray-100 dark:border-gray-700/50">
-                <span class="text-4xl block mb-2">📿</span>
-                <p class="font-bold text-sm text-emerald-900 dark:text-emerald-300">الأذكار</p>
-                <p class="text-[10px] opacity-50 mt-1">حصن المسلم</p>
-            </button>
-        </div>
+<!-- مؤشر السحب -->
+<div class="swipe-hint" id="swipeHint" aria-hidden="true"></div>
+
+<!-- ═══════════════════════════════════════════
+     النوافذ المنبثقة
+═══════════════════════════════════════════ -->
+
+<!-- تأكيد التصفير (للأذكار) -->
+<div class="custom-modal-overlay" id="confirmModal" role="dialog" aria-modal="true">
+  <div class="custom-modal-box">
+    <div class="modal-icon">↺</div>
+    <h3 class="text-center font-bold text-lg mb-2" id="confirmModalTitle">تأكيد التصفير</h3>
+    <p class="text-center text-sm opacity-70 mb-5" id="confirmModalBody">هل أنت متأكد؟</p>
+    <div class="flex gap-3">
+      <button class="modal-btn-confirm" id="confirmModalYes">تأكيد</button>
+      <button class="modal-btn-cancel" onclick="closeModal('confirmModal')">إلغاء</button>
     </div>
+  </div>
+</div>
 
-    <div id="azkarPage" class="page">
-        <div class="flex items-center gap-4 mb-6 mt-4">
-            <button onclick="showPage('homePage')" class="text-emerald-600 text-xl font-bold bg-white dark:bg-gray-800 px-3 py-1 rounded-xl shadow-sm">←</button>
-            <h2 class="text-xl font-bold">الأذكار اليومية</h2>
-        </div>
-        <div class="space-y-4">
-            <div class="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm text-right">
-                <p class="text-emerald-600 font-bold text-sm mb-1">تذكير</p>
-                <p class="text-md font-semibold">لا تنسَ قراءة أذكار الصباح والمساء لحفظك طوال اليوم.</p>
+<!-- تأكيد تصفير الختم -->
+<div class="custom-modal-overlay" id="confirmKhatmModal" role="dialog" aria-modal="true">
+    <div class="custom-modal-box">
+      <div class="modal-icon">↺</div>
+      <h3 class="text-center font-bold text-lg mb-2">تصفير إنجاز الختم</h3>
+      <p class="text-center text-sm opacity-70 mb-5">هل أنت متأكد من تصفير جميع السور المنجزة؟</p>
+      <div class="flex gap-3">
+        <button class="modal-btn-confirm" id="confirmKhatmYes">تأكيد</button>
+        <button class="modal-btn-cancel" onclick="closeModal('confirmKhatmModal')">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+<!-- الإعدادات -->
+<div class="custom-modal-overlay" id="settingsModal" role="dialog" aria-modal="true">
+  <div class="custom-modal-box" style="max-width:330px;">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26" style="color:var(--green)">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    </div>
+    <h3 class="text-center font-bold text-lg mb-4">إعداد التذكيرات</h3>
+    <div class="space-y-4 mb-5 settings-scroll-area px-1">
+
+      <!-- أذكار الصباح -->
+      <div>
+        <label class="block text-xs font-bold mb-2 opacity-70 flex items-center gap-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--green)"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          أذكار الصباح
+        </label>
+        <div class="time-display-preview" id="previewMorning">--:--</div>
+        <div class="time-picker-container" id="pickerMorning">
+          <div class="time-picker-col">
+            <div class="time-picker-label">ساعة</div>
+            <div style="position:relative;">
+              <div class="time-picker-selector-line"></div>
+              <div class="time-picker-scroll" id="hoursMorning" onscroll="syncPicker('morning')"></div>
             </div>
+          </div>
+          <div class="time-picker-separator">:</div>
+          <div class="time-picker-col">
+            <div class="time-picker-label">دقيقة</div>
+            <div style="position:relative;">
+              <div class="time-picker-selector-line"></div>
+              <div class="time-picker-scroll" id="minutesMorning" onscroll="syncPicker('morning')"></div>
+            </div>
+          </div>
+          <div class="time-picker-col">
+            <div class="time-picker-label">فترة</div>
+            <div class="time-ampm-btn" id="ampmMorning">
+              <div class="time-ampm-option active" onclick="setAmPm('morning','AM')">ص</div>
+              <div class="time-ampm-option" onclick="setAmPm('morning','PM')">م</div>
+            </div>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <div id="quranPage" class="page">
-        <div class="flex items-center gap-4 mb-4 mt-4">
-            <button onclick="showPage('homePage')" class="text-emerald-600 text-xl font-bold bg-white dark:bg-gray-800 px-3 py-1 rounded-xl shadow-sm">←</button>
-            <h2 class="text-xl font-bold">المصحف الشريف كاملاً</h2>
+      <!-- أذكار المساء -->
+      <div>
+        <label class="block text-xs font-bold mb-2 opacity-70 flex items-center gap-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--green)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          أذكار المساء
+        </label>
+        <div class="time-display-preview" id="previewEvening">--:--</div>
+        <div class="time-picker-container" id="pickerEvening">
+          <div class="time-picker-col">
+            <div class="time-picker-label">ساعة</div>
+            <div style="position:relative;">
+              <div class="time-picker-selector-line"></div>
+              <div class="time-picker-scroll" id="hoursEvening" onscroll="syncPicker('evening')"></div>
+            </div>
+          </div>
+          <div class="time-picker-separator">:</div>
+          <div class="time-picker-col">
+            <div class="time-picker-label">دقيقة</div>
+            <div style="position:relative;">
+              <div class="time-picker-selector-line"></div>
+              <div class="time-picker-scroll" id="minutesEvening" onscroll="syncPicker('evening')"></div>
+            </div>
+          </div>
+          <div class="time-picker-col">
+            <div class="time-picker-label">فترة</div>
+            <div class="time-ampm-btn" id="ampmEvening">
+              <div class="time-ampm-option" onclick="setAmPm('evening','AM')">ص</div>
+              <div class="time-ampm-option active" onclick="setAmPm('evening','PM')">م</div>
+            </div>
+          </div>
         </div>
-        
-        <input id="searchSurah" oninput="filterSurahs()" type="text" placeholder="ابحث عن اسم السورة..." class="w-full p-4 mb-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-right outline-none focus:border-emerald-500 shadow-sm">
-        
-        <div id="surahList" class="space-y-2 max-h-[65vh] overflow-y-auto pr-1">
-            <p class="text-center opacity-50 py-10">جاري جلب المصحف الشريف...</p>
-        </div>
-    </div>
+      </div>
 
-    <div id="surahView" class="page">
-        <div class="flex justify-between items-center mb-6 mt-4">
-            <button onclick="showPage('quranPage')" class="text-emerald-600 font-bold bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm">← الفهرس</button>
-            <span id="surahMeta" class="text-xs opacity-60 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 px-3 py-1 rounded-full font-bold"></span>
+      <!-- ورد القرآن -->
+      <div>
+        <label class="block text-xs font-bold mb-2 opacity-70 flex items-center gap-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--green)"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          تذكير ورد القرآن
+        </label>
+        <div class="time-display-preview" id="previewQuran">--:--</div>
+        <div class="time-picker-container" id="pickerQuran">
+          <div class="time-picker-col">
+            <div class="time-picker-label">ساعة</div>
+            <div style="position:relative;">
+              <div class="time-picker-selector-line"></div>
+              <div class="time-picker-scroll" id="hoursQuran" onscroll="syncPicker('quran')"></div>
+            </div>
+          </div>
+          <div class="time-picker-separator">:</div>
+          <div class="time-picker-col">
+            <div class="time-picker-label">دقيقة</div>
+            <div style="position:relative;">
+              <div class="time-picker-selector-line"></div>
+              <div class="time-picker-scroll" id="minutesQuran" onscroll="syncPicker('quran')"></div>
+            </div>
+          </div>
+          <div class="time-picker-col">
+            <div class="time-picker-label">فترة</div>
+            <div class="time-ampm-btn" id="ampmQuran">
+              <div class="time-ampm-option active" onclick="setAmPm('quran','AM')">ص</div>
+              <div class="time-ampm-option" onclick="setAmPm('quran','PM')">م</div>
+            </div>
+          </div>
         </div>
-        <div id="surahContent" class="bg-white dark:bg-gray-800 p-6 rounded-[2.5rem] quran-font text-2xl text-right shadow-md border border-gray-100 dark:border-gray-700 select-text"></div>
-    </div>
+      </div>
 
-    <nav class="nav-bar">
-        <button onclick="showPage('homePage')" class="flex flex-col items-center font-bold text-xs text-emerald-700 dark:text-emerald-400">
-            <span class="text-xl mb-0.5">🏠</span>الرئيسية
+      <!-- صلوات جديدة -->
+      <div class="border-t border-white/20 pt-3 mt-2"><h4 class="text-center font-bold">تذكيرات الصلوات</h4></div>
+      <div><label class="block text-xs font-bold mb-1">صلاة الفجر</label><div class="time-display-preview" id="previewFajr">--:--</div><div class="time-picker-container"><div class="time-picker-col"><div class="time-picker-label">ساعة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="hoursFajr" onscroll="syncPicker('fajr')"></div></div></div><div class="time-picker-separator">:</div><div class="time-picker-col"><div class="time-picker-label">دقيقة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="minutesFajr" onscroll="syncPicker('fajr')"></div></div></div><div class="time-picker-col"><div class="time-picker-label">فترة</div><div class="time-ampm-btn" id="ampmFajr"><div class="time-ampm-option active" onclick="setAmPm('fajr','AM')">ص</div><div class="time-ampm-option" onclick="setAmPm('fajr','PM')">م</div></div></div></div></div>
+      <div><label class="block text-xs font-bold mb-1">صلاة الظهر</label><div class="time-display-preview" id="previewDhuhr">--:--</div><div class="time-picker-container"><div class="time-picker-col"><div class="time-picker-label">ساعة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="hoursDhuhr" onscroll="syncPicker('dhuhr')"></div></div></div><div class="time-picker-separator">:</div><div class="time-picker-col"><div class="time-picker-label">دقيقة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="minutesDhuhr" onscroll="syncPicker('dhuhr')"></div></div></div><div class="time-picker-col"><div class="time-picker-label">فترة</div><div class="time-ampm-btn" id="ampmDhuhr"><div class="time-ampm-option" onclick="setAmPm('dhuhr','AM')">ص</div><div class="time-ampm-option active" onclick="setAmPm('dhuhr','PM')">م</div></div></div></div></div>
+      <div><label class="block text-xs font-bold mb-1">صلاة العصر</label><div class="time-display-preview" id="previewAsr">--:--</div><div class="time-picker-container"><div class="time-picker-col"><div class="time-picker-label">ساعة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="hoursAsr" onscroll="syncPicker('asr')"></div></div></div><div class="time-picker-separator">:</div><div class="time-picker-col"><div class="time-picker-label">دقيقة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="minutesAsr" onscroll="syncPicker('asr')"></div></div></div><div class="time-picker-col"><div class="time-picker-label">فترة</div><div class="time-ampm-btn" id="ampmAsr"><div class="time-ampm-option" onclick="setAmPm('asr','AM')">ص</div><div class="time-ampm-option active" onclick="setAmPm('asr','PM')">م</div></div></div></div></div>
+      <div><label class="block text-xs font-bold mb-1">صلاة المغرب</label><div class="time-display-preview" id="previewMaghrib">--:--</div><div class="time-picker-container"><div class="time-picker-col"><div class="time-picker-label">ساعة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="hoursMaghrib" onscroll="syncPicker('maghrib')"></div></div></div><div class="time-picker-separator">:</div><div class="time-picker-col"><div class="time-picker-label">دقيقة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="minutesMaghrib" onscroll="syncPicker('maghrib')"></div></div></div><div class="time-picker-col"><div class="time-picker-label">فترة</div><div class="time-ampm-btn" id="ampmMaghrib"><div class="time-ampm-option" onclick="setAmPm('maghrib','AM')">ص</div><div class="time-ampm-option active" onclick="setAmPm('maghrib','PM')">م</div></div></div></div></div>
+      <div><label class="block text-xs font-bold mb-1">صلاة العشاء</label><div class="time-display-preview" id="previewIsha">--:--</div><div class="time-picker-container"><div class="time-picker-col"><div class="time-picker-label">ساعة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="hoursIsha" onscroll="syncPicker('isha')"></div></div></div><div class="time-picker-separator">:</div><div class="time-picker-col"><div class="time-picker-label">دقيقة</div><div><div class="time-picker-selector-line"></div><div class="time-picker-scroll" id="minutesIsha" onscroll="syncPicker('isha')"></div></div></div><div class="time-picker-col"><div class="time-picker-label">فترة</div><div class="time-ampm-btn" id="ampmIsha"><div class="time-ampm-option" onclick="setAmPm('isha','AM')">ص</div><div class="time-ampm-option active" onclick="setAmPm('isha','PM')">م</div></div></div></div></div>
+
+    </div>
+    <div class="flex gap-3">
+      <button class="modal-btn-confirm" onclick="saveSettings()">حفظ وتفعيل</button>
+      <button class="modal-btn-cancel" onclick="closeModal('settingsModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة تغيير حجم الصفحة -->
+<div class="custom-modal-overlay" id="pageSizeModal" role="dialog" aria-modal="true">
+    <div class="custom-modal-box" style="max-width:290px;">
+      <h3 class="text-lg font-bold mb-4 text-center">عدد الآيات في الصفحة</h3>
+      <div class="space-y-3 mb-4">
+        <select id="pageSizeSelect" class="time-input-styled text-center">
+            <option value="10">10 آيات</option><option value="20">20 آية</option><option value="30">30 آية</option>
+            <option value="40">40 آية</option><option value="50">50 آية</option><option value="100">100 آية</option>
+        </select>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="applyPageSize()" class="modal-btn-confirm">تطبيق</button>
+        <button onclick="closeModal('pageSizeModal')" class="modal-btn-cancel">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+<!-- تنبيه عام -->
+<div class="custom-modal-overlay" id="alertModal" role="alertdialog" aria-modal="true">
+  <div class="custom-modal-box">
+    <div class="modal-icon" id="alertModalIcon">✓</div>
+    <h3 class="text-center font-bold text-lg mb-2" id="alertModalTitle"></h3>
+    <p class="text-center text-sm opacity-70 mb-5" id="alertModalBody"></p>
+    <button class="modal-btn-confirm" onclick="closeModal('alertModal')">حسناً</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     التطبيق الرئيسي
+═══════════════════════════════════════════ -->
+<div class="w-full max-w-md mx-auto relative min-h-screen overflow-x-hidden px-1">
+
+  <!-- ══ الصفحة الرئيسية ══ -->
+  <div id="homePage" class="page active p-5">
+    <div class="flex justify-between items-center mb-5">
+      <h1 class="text-xl font-bold text-emerald-800 dark:text-emerald-400">درب المسلم</h1>
+      <div class="flex gap-2">
+        <button onclick="openModal('settingsModal')" class="relative p-2.5 glass-btn rounded-xl" aria-label="إعداد التذكيرات" style="border-radius:0.75rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="notification-badge" id="notifBadge" style="display:none;" aria-hidden="true"></span>
         </button>
-        <button onclick="showPage('quranPage')" class="flex flex-col items-center font-bold text-xs opacity-60 hover:opacity-100">
-            <span class="text-xl mb-0.5">📖</span>المصحف
+        <button onclick="toggleDarkMode()" class="p-2.5 glass-btn rounded-xl" aria-label="تبديل المظهر" style="border-radius:0.75rem;">
+          <svg id="darkIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
         </button>
-    </nav>
+      </div>
+    </div>
+
+    <!-- البطاقة الخضراء -->
+    <div class="green-card p-6 mb-5 shadow-xl text-white">
+      <div class="flex justify-between items-start mb-3">
+        <div id="fullDate" class="text-[11px] font-bold opacity-90 text-right leading-relaxed"></div>
+        <div class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold border border-white/10">إنجاز اليوم: <span id="dailyCount">0</span></div>
+      </div>
+      <h2 class="text-base font-bold mb-1 text-yellow-300">تذكير اليوم</h2>
+      <div id="randomAyah" class="text-base quran-font opacity-95 leading-relaxed"></div>
+    </div>
+
+    <!-- تدارك ما فاتك -->
+    <div class="mb-7">
+      <h3 class="text-sm font-bold mb-3 text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        تدارك ما فاتك اليوم
+      </h3>
+      <div id="missedTasksContainer" class="space-y-2"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <button onclick="showPage('quranPage')" class="glass-btn p-7 rounded-[2rem] text-center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40" class="mx-auto mb-2" style="color:var(--green)"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <p class="font-bold text-xs">المصحف</p>
+      </button>
+      <button onclick="showPage('azkarPage')" class="glass-btn p-7 rounded-[2rem] text-center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40" class="mx-auto mb-2" style="color:var(--green)"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+        <p class="font-bold text-xs">الأذكار</p>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ صفحة الأذكار ══ -->
+  <div id="azkarPage" class="page p-5">
+    <div class="flex items-center gap-3 mb-5">
+      <button onclick="showPage('homePage', true)" class="text-emerald-600 font-bold p-2 glass-btn rounded-xl" style="border-radius:0.75rem;" aria-label="رجوع">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h2 class="text-xl font-bold">حصن المسلم</h2>
+    </div>
+    <div class="flex gap-2 mb-5 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md p-1 rounded-2xl border border-white/30">
+      <button id="sabah-btn" onclick="switchTab('صباح')" class="flex-1 py-3 rounded-xl font-bold bg-emerald-600 text-white shadow-md transition-all text-sm">أذكار الصباح</button>
+      <button id="masaa-btn" onclick="switchTab('مساء')" class="flex-1 py-3 rounded-xl font-bold text-gray-400 transition-all text-sm">أذكار المساء</button>
+    </div>
+    <div id="azkar-list" class="space-y-3"></div>
+    <button onclick="confirmReset()" class="w-full py-3.5 text-red-500 font-bold text-xs bg-red-50/50 dark:bg-red-900/10 backdrop-blur-sm rounded-2xl mt-7 mb-10 border border-dashed border-red-200 dark:border-red-800 transition-all hover:bg-red-50/80">
+      تصفير عداد القسم الحالي
+    </button>
+  </div>
+
+  <!-- ══ صفحة البروفايل ══ -->
+  <div id="profilePage" class="page p-5">
+    <h2 class="text-2xl font-bold mb-5 text-center mt-5">الملف الشخصي</h2>
+    <div id="profileHeaderCard" class="relative bg-emerald-600 p-7 rounded-[2.5rem] text-center shadow-xl mb-5 overflow-hidden">
+      <div class="absolute inset-0" style="background:rgba(0,0,0,0.08);"></div>
+      <div class="relative z-10">
+        <div id="userInitial" class="w-18 h-18 bg-white/20 backdrop-blur-md rounded-full mx-auto mb-3 flex items-center justify-center text-white text-3xl font-bold border-2 border-white/30" style="width:72px;height:72px;">؟</div>
+        <h2 id="displayUserName" class="text-2xl font-bold text-white mb-1">مستخدم جديد</h2>
+        <p id="displayUserBio" class="text-white/80 text-xs">خصص صفحتك الآن</p>
+        <button onclick="editProfile()" class="mt-3 px-4 py-1.5 bg-black/20 backdrop-blur-md rounded-full text-[10px] text-white font-bold hover:bg-black/30 transition-all">تعديل البيانات</button>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="bg-gradient-to-r from-emerald-600 to-teal-700 p-5 rounded-[2rem] flex justify-between items-center shadow-lg text-white">
+        <div>
+          <p class="text-[10px] opacity-80 font-bold uppercase text-right">الإنجاز الكلي  </p>
+          <p id="totalLifetime" class="text-3xl font-bold">0</p>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="42" height="42" style="opacity:0.9"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="white" fill-opacity="0.25"/></svg>
+      </div>
+      <div class="bg-white/40 dark:bg-gray-800/40 backdrop-blur-md p-5 rounded-[2rem] border border-dashed border-emerald-200 dark:border-emerald-900/30">
+        <p class="text-[10px] font-bold text-emerald-600 mb-3 text-center">تطوير واعداد</p>
+        <div class="flex flex-col gap-2 text-center">
+          <p class="text-xs font-bold opacity-80">احمد العمري &mdash; Ahmed 10</p>
+          <p class="text-xs font-bold opacity-80">ابراهيم العدواني &mdash; Brody</p>
+        </div>
+      </div>
+      <div class="p-5 text-center">
+        <p class="text-xs leading-relaxed opacity-70 italic">
+          نتمنى منكم نشر التطبيق، كما قال رسولنا الكريم ﷺ<br>
+          <span class="font-bold text-emerald-600 text-sm">"الدال على الخير كفاعله"</span><br>
+          لا تنسونا من دعائكم ❤️
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة تعديل البروفايل -->
+  <div id="editProfileModal" class="custom-modal-overlay" role="dialog" aria-modal="true">
+    <div class="custom-modal-box" style="max-width:290px;">
+      <h3 class="text-lg font-bold mb-4 text-center">تخصيص الحساب</h3>
+      <div class="space-y-3 mb-4">
+        <div>
+          <label class="text-[10px] font-bold block mb-1 opacity-60">الاسم:</label>
+          <input id="userNameInput" type="text" class="time-input-styled" placeholder="اكتب اسمك...">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold block mb-1 opacity-60">الوصف:</label>
+          <input id="userBioInput" type="text" class="time-input-styled" placeholder="طالب، معلم...">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold block mb-1 opacity-60">خلفية الكرت (لون أو رابط):</label>
+          <input id="bgInput" type="text" class="time-input-styled" placeholder="#059669 أو رابط صورة">
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="saveProfile()" class="modal-btn-confirm">حفظ</button>
+        <button onclick="closeModal('editProfileModal')" class="modal-btn-cancel">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ صفحة المصحف ══ -->
+  <div id="quranPage" class="page p-5">
+    <div class="flex items-center gap-3 mb-4">
+      <button onclick="showPage('homePage', true)" class="text-emerald-600 font-bold p-2 glass-btn rounded-xl" style="border-radius:0.75rem;" aria-label="رجوع">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h2 class="text-xl font-bold">المصحف الكريم</h2>
+    </div>
+    <input id="searchSurah" oninput="filterSurahs()" type="text" placeholder="ابحث عن سورة..." class="time-input-styled mb-3 text-right" style="border-radius:1.1rem;" aria-label="بحث عن سورة">
+
+    <!-- أزرار التبويب -->
+    <div class="flex gap-2 mb-5 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md p-1 rounded-2xl border border-white/30">
+      <button id="quran-list-tab" onclick="switchQuranTab('list')" class="flex-1 py-3 rounded-xl font-bold bg-emerald-600 text-white shadow-md transition-all text-sm">القرآن الكريم</button>
+      <button id="khatm-tab" onclick="switchQuranTab('khatm')" class="flex-1 py-3 rounded-xl font-bold text-gray-400 transition-all text-sm">إنجاز الختم</button>
+    </div>
+
+    <!-- سلايدر حجم الخط (يظهر في القسمين) -->
+    <div class="font-slider-container">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-bold" style="color:var(--green)">حجم خط القرآن</span>
+        <span class="font-size-preview" id="fontSizePreviewText">بِسْمِ اللَّهِ</span>
+      </div>
+      <div class="slider-track-wrapper" dir="ltr">
+        <div class="slider-track" id="sliderTrack">
+          <div class="slider-fill" id="sliderFill"></div>
+          <div class="slider-dots" id="sliderDots"></div>
+          <div class="slider-bubble" id="sliderBubble">متوسط</div>
+          <input type="range" class="font-range-input" id="fontSizeRange"
+            min="0" max="6" step="1" value="4"
+            oninput="onFontSliderChange(this.value)"
+            aria-label="حجم خط القرآن">
+        </div>
+      </div>
+    </div>
+
+    <!-- قائمة السور (القسم الأول) -->
+    <div id="surahListContainer" class="space-y-2"></div>
+    <!-- قائمة إنجاز الختم (القسم الثاني) -->
+    <div id="khatmContainer" style="display:none;"></div>
+
+    <!-- زر تصفير إنجاز الختم (تحت القسمين) -->
+    <button onclick="confirmKhatmReset()" class="w-full py-3.5 text-red-500 font-bold text-xs bg-red-50/50 dark:bg-red-900/10 backdrop-blur-sm rounded-2xl mt-5 mb-10 border border-dashed border-red-200 dark:border-red-800 transition-all hover:bg-red-50/80">
+        تصفير عداد إنجاز الختم
+      </button>
+  </div>
+
+  <!-- ══ صفحة عرض السورة ══ -->
+  <div id="surahView" class="page p-5">
+    <div class="flex items-center justify-between mb-4">
+      <button onclick="showPage('quranPage', true)" class="text-emerald-600 font-bold p-2 glass-btn rounded-xl" style="border-radius:0.75rem;" aria-label="رجوع">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h2 id="surahViewTitle" class="text-xl font-bold"></h2>
+      <button onclick="openPageSizeModal()" class="text-emerald-600 font-bold p-2 glass-btn rounded-xl">⋮</button>
+    </div>
+    <div id="surahContent" class="bg-white/55 dark:bg-gray-800/55 backdrop-blur-lg p-5 rounded-[2rem] quran-font leading-loose text-right border border-white/40 dark:border-white/5 mb-3"></div>
+    <div id="surahPagination" class="flex flex-wrap gap-2 justify-center mt-3 mb-5"></div>
+  </div>
+
+  <!-- ══ شريط التنقل ══ -->
+  <nav id="bottomNav" class="nav-bar" aria-label="التنقل الرئيسي">
+    <div id="navIndicator" class="nav-indicator" aria-hidden="true"></div>
+    <button onclick="showPage('homePage')" class="flex flex-col items-center relative z-10 opacity-100 gap-0.5" id="nav-home" aria-label="الرئيسية">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="text-[10px] font-bold">الرئيسية</span>
+    </button>
+    <button onclick="showPage('profilePage')" class="flex flex-col items-center relative z-10 opacity-40 gap-0.5" id="nav-profile" aria-label="البروفايل">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="text-[10px] font-bold">الملف الشخصي</span>
+    </button>
+  </nav>
 </div>
 
 <script>
-    let quranData = [];
+'use strict';
 
-    // محرك جلب البيانات الذكي والمنقذ
-    async function loadQuranData() {
-        // المحاولة الأولى: نجرب نقرأ من ملفك المحلي مباشرة
-        try {
-            const response = await fetch('quran.json?v=' + new Date().getTime());
-            quranData = await response.json();
-            renderIndex(quranData); 
-        } catch (error) {
-            console.log("الملف المحلي لم يجهز بعد على جيت هاب بيج، جاري الانتقال للخطة البديلة المباشرة...");
-            // المحاولة الثانية (الخطة البديلة): إذا جيت هاب معلق، نسحب النص فورا من السيرفر الموثق مباشرة لتشتغل الشاشة عندك الحين
-            try {
-                const backupResponse = await fetch('https://raw.githubusercontent.com/risan/quran-json/master/data/quran.json');
-                quranData = await backupResponse.json();
-                renderIndex(quranData);
-            } catch (backupError) {
-                document.getElementById('surahList').innerHTML = `<p class="text-center text-red-500 font-bold p-4">يرجى التحقق من الاتصال بالإنترنت لتشغيل المصحف لأول مرة.</p>`;
+/* ══════════════════════════════
+   البيانات الثابتة
+══════════════════════════════ */
+const MOTIVATIONAL = [
+  "وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا",
+  "وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا وَيَرْزُقْهُ مِنْ حَيْثُ لَا يَحْتَسِبُ",
+  "وَبَشِّرِ الصَّابِرِينَ",
+  "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا",
+  "يُرِيدُ اللَّهُ بِكُمُ الْيُسْرَ وَلَا يُرِيدُ بِكُمُ الْعُسْرَ",
+  "قُلْ يَا عِبَادِيَ الَّذِينَ أَسْرَفُوا عَلَىٰ أَنفُسِهِمْ لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ",
+  "وَإِذَا سَأَلَكَ عِبَادِي عَنِّي فَإِنِّي قَرِيبٌ أُجِيبُ دَعْوَةَ الدَّاعِ إِذَا دَعَانِ",
+  "إِنَّ رَحْمَتَ اللَّهِ قَرِيبٌ مِّنَ الْمُحْسِنِينَ",
+  "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا إِنَّ مَعَ الْعُسْرِ يُسْرًا",
+  "وَعَسَىٰ أَن تَكْرَهُوا شَيْئًا وَهُوَ خَيْرٌ لَّكُمْ",
+  "فَاذْكُرُونِي أَذْكُرْكُمْ"
+];
+
+/* بيانات الأذكار */
+const AZKAR = {
+  'صباح': [
+    {id:1,title:"آية الكرسي",zekr:"اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ.",count:1,desc:"مرة واحدة"},
+    {id:2,title:"سورة الإخلاص",zekr:"قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ",count:3,desc:"3 مرات"},
+    {id:3,title:"سورة الفلق",zekr:"قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ مِن شَرِّ مَا خَلَقَ ۝ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ۝ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ ۝ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ",count:3,desc:"3 مرات"},
+    {id:4,title:"سورة الناس",zekr:"قُلْ أَعُوذُ بِرَبِّ النَّاسِ ۝ مَلِكِ النَّاسِ ۝ إِلَٰهِ النَّاسِ ۝ مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ ۝ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ ۝ مِنَ الْجِنَّةِ وَالنَّاسِ",count:3,desc:"3 مرات"},
+    {id:5,title:"دعاء الصباح",zekr:"أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.",count:1,desc:"مرة واحدة"},
+    {id:6,title:"سيد الاستغفار",zekr:"اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطعتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي، فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ.",count:1,desc:"مرة واحدة"},
+    {id:7,title:"دعاء العافية",zekr:"اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَهَ إِلَّا أَنْتَ.",count:3,desc:"3 مرات"},
+    {id:8,title:"بسم الله الذي لا يضر",zekr:"بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.",count:3,desc:"3 مرات"},
+    {id:9,title:"رضيت بالله رباً",zekr:"رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا.",count:3,desc:"3 مرات"},
+    {id:10,title:"سبحان الله وبحمده",zekr:"سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.",count:100,desc:"100 مرة"},
+    {id:11,title:"لا إله إلا الله وحده",zekr:"لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.",count:10,desc:"10 مرات"},
+    {id:12,title:"أستغفر الله وأتوب إليه",zekr:"أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ.",count:100,desc:"100 مرة"}
+  ],
+  'مساء': [
+    {id:1,title:"آية الكرسي",zekr:"اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ.",count:1,desc:"مرة واحدة"},
+    {id:2,title:"سورة الإخلاص",zekr:"قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ",count:3,desc:"3 مرات"},
+    {id:3,title:"سورة الفلق",zekr:"قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ مِن شَرِّ مَا خَلَقَ ۝ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ۝ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ ۝ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ",count:3,desc:"3 مرات"},
+    {id:4,title:"سورة الناس",zekr:"قُلْ أَعُوذُ بِرَبِّ النَّاسِ ۝ مَلِكِ النَّاسِ ۝ إِلَٰهِ النَّاسِ ۝ مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ ۝ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ ۝ مِنَ الْجِنَّةِ وَالنَّاسِ",count:3,desc:"3 مرات"},
+    {id:5,title:"دعاء المساء",zekr:"أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.",count:1,desc:"مرة واحدة"},
+    {id:6,title:"سيد الاستغفار",zekr:"اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي، فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ.",count:1,desc:"مرة واحدة"},
+    {id:7,title:"دعاء العافية",zekr:"اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَايَ وَأَهْلِي وَمَالِي.",count:3,desc:"3 مرات"},
+    {id:8,title:"بسم الله الذي لا يضر",zekr:"بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.",count:3,desc:"3 مرات"},
+    {id:9,title:"رضيت بالله رباً",zekr:"رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا.",count:3,desc:"3 مرات"},
+    {id:10,title:"سبحان الله وبحمده",zekr:"سُبْحَانَ اللَّهِ وَبِحَمْدِهِ.",count:100,desc:"100 مرة"},
+    {id:11,title:"لا إله إلا الله وحده",zekr:"لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.",count:10,desc:"10 مرات"},
+    {id:12,title:"أستغفر الله وأتوب إليه",zekr:"أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ.",count:100,desc:"100 مرة"}
+  ]
+};
+
+const ALL_SURAS_NAMES = [
+    "الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس","هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه","الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم","لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر","فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق","الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة","الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج","نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس","التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"
+];
+
+const KHATM_MESSAGES = [
+    "مبارك الإنجاز! جعل الله القرآن نوراً لقلبك ودربك.",
+    "هنيئاً لك الختم! تقبل الله طاعتك ورفع بها درجاتك.",
+    "إنجاز عظيم! زادك الله رفعة ونوراً ببركة كتابه الكريم.",
+    "تقبل الله منك! هنيئاً لقلبك هذا القرب والنور المبارك.",
+    "مبارك لك! جعل الله القرآن ربيع قلبك وشفيعك يوم القيامة."
+];
+
+const FONT_SIZES = [
+  {size:'0.75rem',label:'صغير جداً'},{size:'0.85rem',label:'صغير'},{size:'1.0rem', label:'أقل من متوسط'},
+  {size:'1.15rem',label:'متوسط صغير'},{size:'1.3rem', label:'متوسط'},{size:'1.55rem',label:'كبير'},{size:'1.9rem', label:'كبير جداً'}
+];
+
+/* ══════════════════════════════
+   الحالة العامة
+══════════════════════════════ */
+let currentCat    = 'صباح';
+let progress      = {};
+let lifetimeCount = 0;
+let currentFontIdx = 4;
+let missedTasks   = [];
+let pageStack     = ['homePage'];
+let isNavigating  = false;
+let toastTimer    = null;
+let scheduledNotifs = {};
+
+// Khatm & Bookmarks
+let khatmCompleted = {};
+let bookmarkSurah = null;
+let allSurahs = [];
+let currentSurahAyahs = [];
+let currentSurahName = '';
+let currentSurahPage = 1;
+let currentSurahId = 1;
+let totalSurahPages = 1;
+let currentPageSize = 30; // الافتراضي 30 آية
+let surahCache = new Map();
+let currentQuranTab = 'list'; // 'list' or 'khatm'
+
+/* ══ تهيئة الـ localStorage بأمان ══ */
+function loadStorage() {
+  try {
+    progress      = JSON.parse(localStorage.getItem('azkarProgress') || '{}');
+    lifetimeCount = parseInt(localStorage.getItem('lifetimeCount') || '0', 10) || 0;
+    currentFontIdx = parseInt(localStorage.getItem('quranFontIdx') || '4', 10);
+    if (isNaN(currentFontIdx) || currentFontIdx < 0 || currentFontIdx > 6) currentFontIdx = 4;
+    khatmCompleted = JSON.parse(localStorage.getItem('khatmCompleted') || '{}');
+    const savedBookmark = localStorage.getItem('bookmarkSurah');
+    if(savedBookmark) bookmarkSurah = JSON.parse(savedBookmark);
+    currentPageSize = parseInt(localStorage.getItem('quranPageSize') || '30');
+    if(isNaN(currentPageSize) || currentPageSize < 10) currentPageSize = 30;
+  } catch(e) { progress = {}; lifetimeCount = 0; khatmCompleted = {}; }
+}
+
+function getTodayKey() { return new Date().toDateString(); }
+
+function initTasks() {
+  let allTasks = {};
+  try { allTasks = JSON.parse(localStorage.getItem('tasksData') || '{}'); } catch(e) {}
+  const today = getTodayKey();
+  const now = Date.now();
+  Object.keys(allTasks).forEach(k => { if (now - new Date(k).getTime() > 7 * 24 * 60 * 60 * 1000) delete allTasks[k]; });
+  if (!allTasks[today]) {
+    allTasks[today] = [
+      {id:'quran', text:'قراءة ورد القرآن',  done:false},
+      {id:'sabah', text:'أذكار الصباح',       done:false},
+      {id:'masaa', text:'أذكار المساء',        done:false}
+    ];
+  }
+  localStorage.setItem('tasksData', JSON.stringify(allTasks));
+  missedTasks = allTasks[today];
+}
+
+function checkDailyReset() {
+  const lastDay = localStorage.getItem('progressDay');
+  const today   = getTodayKey();
+  if (lastDay !== today) {
+    progress = {};
+    localStorage.setItem('azkarProgress', '{}');
+    localStorage.setItem('progressDay', today);
+  }
+}
+
+/* ══════════════════════════════
+   التنقل بين الصفحات
+══════════════════════════════ */
+function showPage(id, isBack = false) {
+  if (isNavigating) return;
+  const current = document.querySelector('.page.active');
+  const next    = document.getElementById(id);
+  if (!next || current === next) return;
+  isNavigating = true;
+  current.classList.add('will-animate');
+  next.classList.add('will-animate');
+  current.classList.remove('active');
+  next.classList.remove('animate-in', 'animate-back');
+  next.classList.add('active');
+  void next.offsetWidth;
+  next.classList.add(isBack ? 'animate-back' : 'animate-in');
+  setTimeout(() => {
+    isNavigating = false;
+    current.classList.remove('will-animate');
+    next.classList.remove('will-animate', 'animate-in', 'animate-back');
+  }, 380);
+  if (isBack) { if (pageStack.length > 1) pageStack.pop(); }
+  else { if (pageStack[pageStack.length - 1] !== id) pageStack.push(id); }
+  window.history.pushState({page: id}, '', '');
+  const hideOn = ['azkarPage', 'quranPage', 'surahView'];
+  document.body.classList.toggle('nav-hidden', hideOn.includes(id));
+  const ind = document.getElementById('navIndicator');
+  if (id === 'homePage') { ind.style.transform = 'translateX(0)'; document.getElementById('nav-home').style.opacity = '1'; document.getElementById('nav-profile').style.opacity = '0.4'; }
+  else if (id === 'profilePage') { ind.style.transform = 'translateX(calc(-100% - 10px))'; document.getElementById('nav-home').style.opacity = '0.4'; document.getElementById('nav-profile').style.opacity = '1'; }
+  if (id === 'quranPage' && !window._surahsLoaded) { window._surahsLoaded = true; fetchSurahs(); }
+  updateStats();
+  window.scrollTo(0, 0);
+}
+window.addEventListener('popstate', () => { if (pageStack.length > 1) showPage(pageStack[pageStack.length - 2], true); else window.history.pushState({page:'homePage'}, '', ''); });
+
+/* ══════════════════════════════
+   النوافذ المنبثقة
+══════════════════════════════ */
+function openModal(id) { const el = document.getElementById(id); if (el) { el.classList.add('open'); document.body.style.overflow = 'hidden'; } }
+function closeModal(id) { const el = document.getElementById(id); if (el) { el.classList.remove('open'); document.body.style.overflow = ''; } }
+document.querySelectorAll('.custom-modal-overlay').forEach(overlay => { overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay.id); }); });
+function showAlert(icon, title, body) { document.getElementById('alertModalIcon').textContent = icon; document.getElementById('alertModalTitle').textContent = title; document.getElementById('alertModalBody').textContent  = body; openModal('alertModal'); }
+function showToast(msg) { const t = document.getElementById('toast'); if (toastTimer) clearTimeout(toastTimer); t.textContent = msg; t.classList.add('show'); toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }
+
+/* ══════════════════════════════
+   الأذكار
+══════════════════════════════ */
+function confirmReset() { document.getElementById('confirmModalTitle').textContent = `تصفير أذكار ${currentCat}`; document.getElementById('confirmModalBody').textContent  = `هل أنت متأكد من تصفير أذكار ${currentCat}؟`; document.getElementById('confirmModalYes').onclick = () => { doReset(); closeModal('confirmModal'); }; openModal('confirmModal'); }
+function doReset() { AZKAR[currentCat].forEach((_, i) => delete progress[`${currentCat}-${i}`]); saveProgress(); renderAzkar(); updateStats(); showToast(`تم تصفير أذكار ${currentCat}`); }
+function switchTab(cat) { currentCat = cat; const activeClass = 'flex-1 py-3 rounded-xl font-bold bg-emerald-600 text-white shadow-md transition-all text-sm'; const inactiveClass = 'flex-1 py-3 rounded-xl font-bold text-gray-400 transition-all text-sm'; document.getElementById('sabah-btn').className = cat === 'صباح' ? activeClass : inactiveClass; document.getElementById('masaa-btn').className = cat === 'مساء' ? activeClass : inactiveClass; renderAzkar(); }
+function renderAzkar() { const list = document.getElementById('azkar-list'); const frag = document.createDocumentFragment(); (AZKAR[currentCat] || []).forEach((item, idx) => { const key = `${currentCat}-${idx}`; const count = progress[key] || 0; const isDone = count >= item.count; const pct = Math.round((count / item.count) * 100); const card = document.createElement('div'); card.className = 'zekr-card text-right'; let progressBar = ''; if (item.count > 1) { progressBar = `<div class="w-full bg-gray-200/60 dark:bg-gray-700/60 rounded-full h-1.5 mb-3 overflow-hidden"><div class="bg-emerald-500 h-full rounded-full" style="width:${pct}%;transition:width 0.4s ease"></div></div>`; } card.innerHTML = `<div class="flex justify-between items-center mb-1"><span class="text-xs text-emerald-600 font-bold">${item.id}) ${item.title}</span><span class="text-[10px] opacity-60 font-bold">${item.desc}</span></div><div class="text-lg font-bold mb-3 quran-font leading-relaxed">${item.zekr}</div>${progressBar}<button data-key="${key}" data-max="${item.count}" class="count-btn ${isDone ? 'done' : 'active'}">${isDone ? '✓ أحسنت! تم' : `اضغط للتكرار (${count} / ${item.count})`}</button>`; frag.appendChild(card); }); list.innerHTML = ''; list.appendChild(frag); list.onclick = e => { const btn = e.target.closest('.count-btn'); if (!btn) return; pressCount(btn.dataset.key, parseInt(btn.dataset.max, 10)); }; }
+function pressCount(key, max) { if (!progress[key]) progress[key] = 0; if (progress[key] < max) { progress[key]++; lifetimeCount++; saveProgress(); if (progress[key] === max) showToast('أحسنت! اكتملت هذه الذكرة'); renderAzkar(); updateStats(); } }
+function saveProgress() { try { localStorage.setItem('azkarProgress', JSON.stringify(progress)); localStorage.setItem('lifetimeCount', lifetimeCount); } catch(e) {} }
+
+/* ══════════════════════════════
+   مهام اليوم
+══════════════════════════════ */
+function renderMissedTasks() { const container = document.getElementById('missedTasksContainer'); const frag = document.createDocumentFragment(); missedTasks.forEach((task, idx) => { const div = document.createElement('div'); div.className = `missed-task-card${task.done ? ' done-card' : ''}`; div.dataset.idx = idx; div.innerHTML = `<span class="text-xs font-bold${task.done ? ' line-through opacity-40' : ''}">${task.text}</span><div class="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${task.done ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300 dark:border-gray-600'}">${task.done ? '<svg viewBox="0 0 12 12" fill="none" width="12" height="12"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>`; frag.appendChild(div); }); container.innerHTML = ''; container.appendChild(frag); container.onclick = e => { const card = e.target.closest('.missed-task-card'); if (!card) return; toggleTask(parseInt(card.dataset.idx, 10)); }; }
+function toggleTask(idx) { missedTasks[idx].done = !missedTasks[idx].done; let allTasks = {}; try { allTasks = JSON.parse(localStorage.getItem('tasksData') || '{}'); } catch(e) {} allTasks[getTodayKey()] = missedTasks; try { localStorage.setItem('tasksData', JSON.stringify(allTasks)); } catch(e) {} renderMissedTasks(); }
+function updateStats() { const daily = Object.values(progress).reduce((a, b) => a + b, 0); document.getElementById('dailyCount').textContent = daily; document.getElementById('totalLifetime').textContent = lifetimeCount; }
+
+/* ══════════════════════════════
+   الوضع الليلي والبروفايل
+══════════════════════════════ */
+function toggleDarkMode() { document.documentElement.classList.toggle('dark'); try { localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch(e) {} }
+function editProfile() { document.getElementById('userNameInput').value = localStorage.getItem('userName') || ''; document.getElementById('userBioInput').value  = localStorage.getItem('userBio')  || ''; document.getElementById('bgInput').value       = localStorage.getItem('userBg')   || ''; openModal('editProfileModal'); }
+function saveProfile() { const name = document.getElementById('userNameInput').value.trim() || 'مستخدم جديد'; const bio  = document.getElementById('userBioInput').value.trim()  || 'خصص بروفايلك الآن'; const bg   = document.getElementById('bgInput').value.trim(); try { localStorage.setItem('userName', name); localStorage.setItem('userBio',  bio); localStorage.setItem('userBg',   bg); } catch(e) {} applyProfileData(); closeModal('editProfileModal'); showToast('تم حفظ البيانات'); }
+function applyProfileData() { const name = localStorage.getItem('userName') || 'مستخدم جديد'; const bio  = localStorage.getItem('userBio')  || 'خصص بروفايلك الآن'; const bg   = localStorage.getItem('userBg')   || ''; document.getElementById('displayUserName').textContent = name; document.getElementById('displayUserBio').textContent  = bio; document.getElementById('userInitial').textContent     = name.charAt(0) || '؟'; const header = document.getElementById('profileHeaderCard'); if (bg.startsWith('http')) { header.style.backgroundImage  = `url('${bg}')`; header.style.backgroundColor  = 'transparent'; } else if (bg.startsWith('#')) { header.style.backgroundImage  = 'none'; header.style.backgroundColor  = bg; } else { header.style.backgroundImage  = 'none'; header.style.background       = 'linear-gradient(135deg,#059669,#064e3b)'; } }
+
+/* ══════════════════════════════
+   منتقي الوقت والإشعارات
+══════════════════════════════ */
+const pickerState = { morning: {hour:null, minute:null, ampm:'AM'}, evening: {hour:null, minute:null, ampm:'PM'}, quran:   {hour:null, minute:null, ampm:'AM'}, fajr:{hour:null, minute:null, ampm:'AM'}, dhuhr:{hour:null, minute:null, ampm:'PM'}, asr:{hour:null, minute:null, ampm:'PM'}, maghrib:{hour:null, minute:null, ampm:'PM'}, isha:{hour:null, minute:null, ampm:'PM'} };
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function buildTimePicker(name) { const hEl = document.getElementById('hours' + cap(name)); const mEl = document.getElementById('minutes' + cap(name)); if(!hEl) return; const hFrag = document.createDocumentFragment(); const mFrag = document.createDocumentFragment(); const spacerH1 = document.createElement('div'); spacerH1.className = 'time-picker-spacer'; hFrag.appendChild(spacerH1); for (let h = 1; h <= 12; h++) { const d = document.createElement('div'); d.className = 'time-picker-item'; d.textContent = String(h).padStart(2,'0'); hFrag.appendChild(d); } const spacerH2 = document.createElement('div'); spacerH2.className = 'time-picker-spacer'; hFrag.appendChild(spacerH2); const spacerM1 = document.createElement('div'); spacerM1.className = 'time-picker-spacer'; mFrag.appendChild(spacerM1); for (let m = 0; m < 60; m++) { const d = document.createElement('div'); d.className = 'time-picker-item'; d.textContent = String(m).padStart(2,'0'); mFrag.appendChild(d); } const spacerM2 = document.createElement('div'); spacerM2.className = 'time-picker-spacer'; mFrag.appendChild(spacerM2); hEl.innerHTML = ''; hEl.appendChild(hFrag); mEl.innerHTML = ''; mEl.appendChild(mFrag); setPickerScroll(name, 6, 0); }
+function setPickerScroll(name, hour, minute) { const hEl = document.getElementById('hours' + cap(name)); const mEl = document.getElementById('minutes' + cap(name)); if(!hEl) return; hEl.scrollTop = (hour - 1) * 40; mEl.scrollTop = minute * 40; updatePickerHighlight(name); updateTimePreview(name); }
+function syncPicker(name) { updatePickerHighlight(name); updateTimePreview(name); }
+function updatePickerHighlight(name) { const hEl = document.getElementById('hours' + cap(name)); const mEl = document.getElementById('minutes' + cap(name)); if(!hEl) return; const hIdx = Math.round(hEl.scrollTop / 40); const mIdx = Math.round(mEl.scrollTop / 40); pickerState[name].hour = hIdx + 1; pickerState[name].minute = mIdx; hEl.querySelectorAll('.time-picker-item').forEach((el,i) => el.classList.toggle('selected', i === hIdx)); mEl.querySelectorAll('.time-picker-item').forEach((el,i) => el.classList.toggle('selected', i === mIdx)); }
+function updateTimePreview(name) { const s = pickerState[name]; if (s.hour === null) return; const suffix = s.ampm === 'AM' ? 'ص' : 'م'; const previewEl = document.getElementById('preview' + cap(name)); if(previewEl) previewEl.textContent = `${String(s.hour).padStart(2,'0')}:${String(s.minute).padStart(2,'0')} ${suffix}`; }
+function setAmPm(name, val) { pickerState[name].ampm = val; const container = document.getElementById('ampm' + cap(name)); if(container) container.querySelectorAll('.time-ampm-option').forEach(btn => { btn.classList.toggle('active', (btn.textContent === 'ص' ? 'AM' : 'PM') === val); }); updateTimePreview(name); }
+function getPickerTime24(name) { const s = pickerState[name]; if (s.hour === null) return ''; let h = s.hour; if (s.ampm === 'AM' && h === 12) h = 0; if (s.ampm === 'PM' && h !== 12) h += 12; return `${String(h).padStart(2,'0')}:${String(s.minute).padStart(2,'0')}`; }
+function setPickerFromTime24(name, t) { if (!t) return; const [h24, m] = t.split(':').map(Number); const h12 = h24 % 12 || 12; const ampm = h24 < 12 ? 'AM' : 'PM'; pickerState[name].ampm = ampm; setAmPm(name, ampm); setTimeout(() => setPickerScroll(name, h12, m), 60); }
+async function requestNotifPermission() { if (!('Notification' in window)) return false; if (Notification.permission === 'granted') return true; if (Notification.permission !== 'denied') return (await Notification.requestPermission()) === 'granted'; return false; }
+function scheduleNotification(type, timeStr, isPrayer = false, prayerName = '') { if (!timeStr) return; const [h, m] = timeStr.split(':').map(Number); const now = new Date(); const target = new Date(); target.setHours(h, m, 0, 0); if (target <= now) target.setDate(target.getDate() + 1); const delay = target - now; if (scheduledNotifs[type]) clearTimeout(scheduledNotifs[type]); let title = 'درب المسلم'; let body = ''; if(isPrayer) { if(type === 'dhuhr' && new Date().getDay() === 5) { title = 'صلاة الجمعة'; body = `حان وقت صلاة الجمعة! تقبل الله منا ومنكم.`; } else { title = `صلاة ${prayerName}`; body = `حان وقت صلاة ${prayerName}، حافظ على صلاتك.`; } } else { const labels = { morning: {title:'درب المسلم', body:'حان وقت أذكار الصباح! لا تنسَ ذكر الله.'}, evening: {title:'درب المسلم', body:'حان وقت أذكار المساء! اختم يومك بذكر الله.'}, quran:   {title:'درب المسلم', body:'تذكير بورد القرآن الكريم!'} }; title = labels[type]?.title || 'تذكير'; body = labels[type]?.body || ''; } scheduledNotifs[type] = setTimeout(async function fire() { const opts = { body: body, icon: '/icon-192.png', vibrate: [200, 100, 200], requireInteraction: true }; try { if ('serviceWorker' in navigator) { const reg = await navigator.serviceWorker.ready; await reg.showNotification(title, opts); } else { new Notification(title, opts); } } catch(err) { console.warn(err); } scheduledNotifs[type] = setTimeout(fire, 86400000); }, delay); }
+async function saveSettings() { const morning = getPickerTime24('morning'); const evening = getPickerTime24('evening'); const quran   = getPickerTime24('quran'); const fajr = getPickerTime24('fajr'); const dhuhr = getPickerTime24('dhuhr'); const asr = getPickerTime24('asr'); const maghrib = getPickerTime24('maghrib'); const isha = getPickerTime24('isha'); try { localStorage.setItem('timeMorning', morning); localStorage.setItem('timeEvening', evening); localStorage.setItem('timeQuran', quran); localStorage.setItem('timeFajr', fajr); localStorage.setItem('timeDhuhr', dhuhr); localStorage.setItem('timeAsr', asr); localStorage.setItem('timeMaghrib', maghrib); localStorage.setItem('timeIsha', isha); } catch(e) {} const granted = await requestNotifPermission(); closeModal('settingsModal'); if (!granted) { showAlert('⚠', 'تنبيه', 'يرجى السماح بالإشعارات من إعدادات المتصفح لتفعيل التذكيرات.'); return; } if (morning) scheduleNotification('morning', morning, false); if (evening) scheduleNotification('evening', evening, false); if (quran) scheduleNotification('quran', quran, false); if (fajr) scheduleNotification('fajr', fajr, true, 'الفجر'); if (dhuhr) scheduleNotification('dhuhr', dhuhr, true, 'الظهر'); if (asr) scheduleNotification('asr', asr, true, 'العصر'); if (maghrib) scheduleNotification('maghrib', maghrib, true, 'المغرب'); if (isha) scheduleNotification('isha', isha, true, 'العشاء'); document.getElementById('notifBadge').style.display = 'block'; showToast('تم حفظ التذكيرات وتفعيلها'); }
+function loadSavedSettings() { const names = ['morning','evening','quran','fajr','dhuhr','asr','maghrib','isha']; names.forEach(n => buildTimePicker(n)); const m = localStorage.getItem('timeMorning'); const e = localStorage.getItem('timeEvening'); const q = localStorage.getItem('timeQuran'); const f = localStorage.getItem('timeFajr'); const d = localStorage.getItem('timeDhuhr'); const a = localStorage.getItem('timeAsr'); const mg = localStorage.getItem('timeMaghrib'); const i = localStorage.getItem('timeIsha'); if(m) setPickerFromTime24('morning', m); if(e) setPickerFromTime24('evening', e); if(q) setPickerFromTime24('quran', q); if(f) setPickerFromTime24('fajr', f); if(d) setPickerFromTime24('dhuhr', d); if(a) setPickerFromTime24('asr', a); if(mg) setPickerFromTime24('maghrib', mg); if(i) setPickerFromTime24('isha', i); if (m || e || q || f || d || a || mg || i) { document.getElementById('notifBadge').style.display = 'block'; requestNotifPermission().then(granted => { if(!granted) return; if(m) scheduleNotification('morning', m, false); if(e) scheduleNotification('evening', e, false); if(q) scheduleNotification('quran', q, false); if(f) scheduleNotification('fajr', f, true, 'الفجر'); if(d) scheduleNotification('dhuhr', d, true, 'الظهر'); if(a) scheduleNotification('asr', a, true, 'العصر'); if(mg) scheduleNotification('maghrib', mg, true, 'المغرب'); if(i) scheduleNotification('isha', i, true, 'العشاء'); }); } }
+
+/* ══════════════════════════════
+   المصحف الكريم (مقسم إلى تبويبين + زر تصفير الختم)
+══════════════════════════════ */
+function confirmKhatmReset() { openModal('confirmKhatmModal'); document.getElementById('confirmKhatmYes').onclick = () => { resetKhatm(); closeModal('confirmKhatmModal'); }; }
+function resetKhatm() { khatmCompleted = {}; localStorage.setItem('khatmCompleted', JSON.stringify(khatmCompleted)); if(currentQuranTab === 'list') renderSurahs(allSurahs); else renderKhatmSection(); showToast('تم تصفير إنجاز الختم'); }
+
+function switchQuranTab(tab) {
+    currentQuranTab = tab;
+    const listTab = document.getElementById('quran-list-tab');
+    const khatmTab = document.getElementById('khatm-tab');
+    const surahContainer = document.getElementById('surahListContainer');
+    const khatmContainer = document.getElementById('khatmContainer');
+    const activeClass = 'flex-1 py-3 rounded-xl font-bold bg-emerald-600 text-white shadow-md transition-all text-sm';
+    const inactiveClass = 'flex-1 py-3 rounded-xl font-bold text-gray-400 transition-all text-sm';
+    if(tab === 'list') {
+        listTab.className = activeClass; khatmTab.className = inactiveClass;
+        surahContainer.style.display = 'block'; khatmContainer.style.display = 'none';
+        if(allSurahs.length) renderSurahs(allSurahs);
+    } else {
+        listTab.className = inactiveClass; khatmTab.className = activeClass;
+        surahContainer.style.display = 'none'; khatmContainer.style.display = 'block';
+        renderKhatmSection();
+    }
+}
+function renderKhatmSection() {
+    const container = document.getElementById('khatmContainer');
+    if(!container) return;
+    const frag = document.createDocumentFragment();
+    let completedCount = 0;
+    ALL_SURAS_NAMES.forEach((name, idx) => {
+        const suraNum = idx+1;
+        const isDone = khatmCompleted[suraNum] === true;
+        if(isDone) completedCount++;
+        const div = document.createElement('div');
+        div.className = 'khatm-surah-item';
+        div.innerHTML = `<span class="khatm-surah-name">${suraNum}. ${name}</span><div class="khatm-check ${isDone ? 'completed' : ''}" data-sura="${suraNum}">${isDone ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}</div>`;
+        frag.appendChild(div);
+    });
+    container.innerHTML = '';
+    container.appendChild(frag);
+    const percent = Math.round((completedCount / 114) * 100);
+    const percentSpan = document.createElement('div'); percentSpan.className = 'text-center mb-2 font-bold'; percentSpan.innerText = `نسبة الإنجاز: ${percent}%`;
+    const progressBar = document.createElement('div'); progressBar.className = 'w-full bg-gray-200/60 rounded-full h-2 mb-4'; progressBar.innerHTML = `<div class="bg-emerald-500 h-2 rounded-full" style="width:${percent}%"></div>`;
+    container.insertBefore(progressBar, container.firstChild);
+    container.insertBefore(percentSpan, container.firstChild);
+    container.onclick = (e) => {
+        const check = e.target.closest('.khatm-check');
+        if(check) {
+            const suraNum = parseInt(check.dataset.sura);
+            // التبديل: إذا كانت السورة منجزة، قم بإلغاء الإنجاز. إذا لم تكن منجزة، قم بإنجازها.
+            if(khatmCompleted[suraNum]) {
+                // إلغاء الإنجاز
+                delete khatmCompleted[suraNum];
+                showToast(`تم إلغاء إنجاز سورة ${ALL_SURAS_NAMES[suraNum-1]}`);
+            } else {
+                // إنجاز السورة
+                khatmCompleted[suraNum] = true;
+                const msg = KHATM_MESSAGES[Math.floor(Math.random() * KHATM_MESSAGES.length)];
+                showToast(msg);
             }
+            localStorage.setItem('khatmCompleted', JSON.stringify(khatmCompleted));
+            renderKhatmSection();
+            if(currentQuranTab === 'list') renderSurahs(allSurahs);
         }
-    }
+    };
+}
+async function fetchSurahs() {
+  const listEl = document.getElementById('surahListContainer');
+  listEl.innerHTML = '<p class="text-center opacity-50 text-sm py-8">جاري التحميل...</p>';
+  try {
+    const res  = await fetch('https://api.alquran.cloud/v1/surah');
+    const data = await res.json();
+    allSurahs  = data.data;
+    if(currentQuranTab === 'list') renderSurahs(allSurahs);
+    else renderKhatmSection();
+  } catch(e) { listEl.innerHTML = '<p class="text-center opacity-50 text-sm py-8">تعذّر التحميل. تحقق من الاتصال.</p>'; }
+}
+function renderSurahs(list) {
+  const listEl = document.getElementById('surahListContainer');
+  const frag   = document.createDocumentFragment();
+  let surahsArray = [...list];
+  let bookmarkedItem = null;
+  let normalItems = [];
+  surahsArray.forEach(s => { if(bookmarkSurah && bookmarkSurah.id === s.number) bookmarkedItem = s; else normalItems.push(s); });
+  if(bookmarkedItem) {
+      const bookmarkDiv = document.createElement('div');
+      bookmarkDiv.className = 'bookmark-highlight p-3 rounded-2xl mb-3 bg-emerald-50/30';
+      bookmarkDiv.innerHTML = `<div class="flex justify-between items-center"><div class="flex items-center gap-2"><span class="font-bold text-emerald-700">⭐ مرجعيتك: ${bookmarkedItem.name}</span><span class="text-[10px] opacity-60">الصفحة: <input type="number" id="bookmarkPageInput" value="${bookmarkSurah.page || 1}" min="1" max="604" style="width:50px" class="bg-transparent border-b border-emerald-400 text-center"> </span></div><button onclick="removeBookmark()" class="text-red-500 text-xs">إزالة</button></div><div class="text-[10px] opacity-50 mt-1">تابع تلاوتك من هنا</div>`;
+      frag.appendChild(bookmarkDiv);
+      setTimeout(() => { const input = document.getElementById('bookmarkPageInput'); if(input) input.onchange = () => { if(bookmarkSurah) { bookmarkSurah.page = parseInt(input.value); localStorage.setItem('bookmarkSurah', JSON.stringify(bookmarkSurah)); showToast('تم حفظ الصفحة'); } }; }, 10);
+  }
+  normalItems.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'p-3 bg-white/55 dark:bg-gray-800/55 backdrop-blur-md rounded-2xl mb-2 text-right flex justify-between items-center border border-white/40 dark:border-white/5 cursor-pointer transition-all';
+    div.dataset.num  = s.number; div.dataset.name = s.name;
+    const isBookmarked = (bookmarkSurah && bookmarkSurah.id === s.number);
+    const isCompleted = khatmCompleted[s.number] === true;
+    div.innerHTML = `<div class="flex items-center gap-2"><span class="font-bold">${s.number}. ${s.name}</span>${isCompleted ? '<span class="text-emerald-500 text-xs">✓</span>' : ''}</div><div class="flex items-center gap-2"><span class="text-xs opacity-50">${s.numberOfAyahs} آية</span><button onclick="event.stopPropagation(); toggleBookmark(${s.number}, '${s.name}')" class="bookmark-star ${isBookmarked ? 'active' : ''}" style="color: ${isBookmarked ? '#f59e0b' : '#94a3b8'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 17 19 21 19 5 5 5 5 21 12 17"></polygon></svg></button></div>`;
+    frag.appendChild(div);
+  });
+  listEl.innerHTML = ''; listEl.appendChild(frag);
+  listEl.onclick = e => { const div = e.target.closest('[data-num]'); if (div && !e.target.closest('.bookmark-star')) openSurah(parseInt(div.dataset.num, 10), div.dataset.name); };
+}
+function toggleBookmark(id, name) { if(bookmarkSurah && bookmarkSurah.id === id) { bookmarkSurah = null; showToast('تم إزالة المرجعية'); } else { bookmarkSurah = { id: id, name: name, page: 1 }; showToast(`تمت إضافة ${name} إلى المرجعيات`); } localStorage.setItem('bookmarkSurah', JSON.stringify(bookmarkSurah)); renderSurahs(allSurahs); }
+function removeBookmark() { bookmarkSurah = null; localStorage.removeItem('bookmarkSurah'); renderSurahs(allSurahs); showToast('تمت إزالة المرجعية'); }
+function filterSurahs() { const q = document.getElementById('searchSurah').value.toLowerCase(); if(currentQuranTab === 'list') renderSurahs(allSurahs.filter(s => s.name.includes(q) || s.englishName.toLowerCase().includes(q))); else { const filteredSurahs = ALL_SURAS_NAMES.filter((name, idx) => name.includes(q)).map((name, idx) => ({number: idx+1, name})); if(filteredSurahs.length) renderKhatmSectionFiltered(filteredSurahs, q); else renderKhatmSection(); } }
+function renderKhatmSectionFiltered(filtered, query) { const container = document.getElementById('khatmContainer'); const frag = document.createDocumentFragment(); filtered.forEach(s => { const suraNum = s.number; const isDone = khatmCompleted[suraNum] === true; const div = document.createElement('div'); div.className = 'khatm-surah-item'; div.innerHTML = `<span class="khatm-surah-name">${suraNum}. ${s.name}</span><div class="khatm-check ${isDone ? 'completed' : ''}" data-sura="${suraNum}">${isDone ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}</div>`; frag.appendChild(div); }); container.innerHTML = ''; container.appendChild(frag); container.onclick = (e) => { const check = e.target.closest('.khatm-check'); if(check) { const suraNum = parseInt(check.dataset.sura); if(khatmCompleted[suraNum]) { delete khatmCompleted[suraNum]; showToast(`تم إلغاء إنجاز سورة ${ALL_SURAS_NAMES[suraNum-1]}`); } else { khatmCompleted[suraNum] = true; const msg = KHATM_MESSAGES[Math.floor(Math.random() * KHATM_MESSAGES.length)]; showToast(msg); } localStorage.setItem('khatmCompleted', JSON.stringify(khatmCompleted)); if(query.length) renderKhatmSectionFiltered(filtered, query); else renderKhatmSection(); if(currentQuranTab === 'list') renderSurahs(allSurahs); } }; }
 
-    function showPage(id) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        window.scrollTo(0,0);
-    }
+/* ══════════════════════════════
+   عرض السورة وتغيير حجم الصفحة
+══════════════════════════════ */
+function openPageSizeModal() { openModal('pageSizeModal'); document.getElementById('pageSizeSelect').value = currentPageSize; }
+function applyPageSize() { currentPageSize = parseInt(document.getElementById('pageSizeSelect').value); localStorage.setItem('quranPageSize', currentPageSize); closeModal('pageSizeModal'); if(currentSurahAyahs.length) { totalSurahPages = Math.ceil(currentSurahAyahs.length / currentPageSize); currentSurahPage = Math.min(currentSurahPage, totalSurahPages); renderSurahPage(currentSurahPage); } }
+async function openSurah(id, name) {
+  showPage('surahView');
+  currentSurahName = name; currentSurahId = id; currentSurahPage = 1;
+  document.getElementById('surahViewTitle').textContent = name;
+  document.getElementById('surahContent').innerHTML    = '<div class="text-center py-10 opacity-60 text-sm">جاري تحميل السورة...</div>';
+  document.getElementById('surahPagination').innerHTML = '';
+  try {
+    if (surahCache.has(id)) { currentSurahAyahs = surahCache.get(id); }
+    else { const res  = await fetch(`https://api.alquran.cloud/v1/surah/${id}`); const data = await res.json(); currentSurahAyahs = data.data.ayahs; surahCache.set(id, currentSurahAyahs); }
+    totalSurahPages = Math.ceil(currentSurahAyahs.length / currentPageSize);
+    renderSurahPage(1);
+  } catch(e) { document.getElementById('surahContent').innerHTML = '<p class="text-center opacity-50 py-8">تعذّر تحميل السورة.</p>'; }
+}
+function renderSurahPage(page) {
+  currentSurahPage = page;
+  const start = (page - 1) * currentPageSize;
+  const end   = Math.min(start + currentPageSize, currentSurahAyahs.length);
+  const ayahs = currentSurahAyahs.slice(start, end);
+  let html = `<h2 class="text-center mb-3 text-emerald-600 font-bold text-xl">${currentSurahName}</h2>`;
+  if (page === 1 && currentSurahId !== 1 && currentSurahId !== 9) { html += `<div class="text-center text-2xl quran-font mb-4 text-emerald-700 dark:text-emerald-400 py-2 border-b border-emerald-100 dark:border-emerald-900/30">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`; }
+  html += ayahs.map((a, i) => { let text = a.text; if (i === 0 && page === 1 && currentSurahId !== 1 && currentSurahId !== 9) { const words = text.trim().split(/\s+/); if (words.length > 4) text = words.slice(4).join(' '); } return `${text} ﴿${a.numberInSurah}﴾`; }).join(' ');
+  if (totalSurahPages > 1) { html += `<div class="text-center text-xs opacity-50 mt-5 pt-4 border-t border-gray-200/50">صفحة ${page} من ${totalSurahPages}</div>`; }
+  document.getElementById('surahContent').innerHTML = html;
+  window.scrollTo(0, 0);
+  renderSurahPagination();
+}
+function renderSurahPagination() {
+  const pag = document.getElementById('surahPagination');
+  if (totalSurahPages <= 1) { pag.innerHTML = ''; return; }
+  const frag = document.createDocumentFragment();
+  for (let i = 1; i <= totalSurahPages; i++) { const btn = document.createElement('button'); btn.className = `surah-page-btn${i === currentSurahPage ? ' current' : ''}`; btn.textContent = i; btn.dataset.page = i; frag.appendChild(btn); }
+  const nav = document.createElement('div'); nav.className = 'w-full flex justify-between items-center mt-2';
+  nav.innerHTML = `<button data-page="${currentSurahPage < totalSurahPages ? currentSurahPage + 1 : ''}" class="surah-page-btn${currentSurahPage >= totalSurahPages ? ' opacity-30 cursor-not-allowed' : ''}">التالية ›</button><span class="text-xs opacity-50">${currentSurahPage} / ${totalSurahPages}</span><button data-page="${currentSurahPage > 1 ? currentSurahPage - 1 : ''}" class="surah-page-btn${currentSurahPage <= 1 ? ' opacity-30 cursor-not-allowed' : ''}">‹ السابقة</button>`;
+  frag.appendChild(nav);
+  pag.innerHTML = ''; pag.appendChild(frag);
+  pag.onclick = e => { const btn = e.target.closest('[data-page]'); if (!btn || !btn.dataset.page) return; renderSurahPage(parseInt(btn.dataset.page, 10)); };
+}
 
-    function renderIndex(data) {
-        const container = document.getElementById('surahList');
-        if (data.length === 0) {
-            container.innerHTML = `<p class="text-center opacity-50 py-4">لا توجد نتائج مطابقة</p>`;
-            return;
-        }
-        container.innerHTML = data.map(surah => `
-            <div onclick="openSurah(${surah.id})" class="surah-card p-4 bg-white dark:bg-gray-800 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 border border-gray-100 dark:border-gray-700/40 shadow-sm">
-                <span class="text-xs opacity-50 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-lg">آياتها: ${surah.verses.length}</span>
-                <span class="font-bold text-gray-800 dark:text-gray-200">${surah.id}. سورة ${surah.name} 📖</span>
-            </div>
-        `).join('');
-    }
+/* ══════════════════════════════
+   سلايدر حجم الخط
+══════════════════════════════ */
+function buildFontSlider() { const dotsEl = document.getElementById('sliderDots'); dotsEl.innerHTML = FONT_SIZES.map((_,i) => `<div class="slider-dot" id="dot${i}"></div>`).join(''); document.getElementById('fontSizeRange').value = currentFontIdx; updateFontSliderUI(currentFontIdx); }
+function onFontSliderChange(val) { currentFontIdx = parseInt(val, 10); try { localStorage.setItem('quranFontIdx', currentFontIdx); } catch(e) {} applyQuranFont(); updateFontSliderUI(currentFontIdx); }
+function applyQuranFont() { document.documentElement.style.setProperty('--font-quran', FONT_SIZES[currentFontIdx].size); const prev = document.getElementById('fontSizePreviewText'); if (prev) prev.style.fontSize = FONT_SIZES[currentFontIdx].size; }
+function updateFontSliderUI(idx) { const pct = (idx / (FONT_SIZES.length - 1)) * 100; document.getElementById('sliderFill').style.width = `${pct}%`; const bubble = document.getElementById('sliderBubble'); bubble.style.left = `${pct}%`; bubble.textContent = FONT_SIZES[idx].label; FONT_SIZES.forEach((_, i) => { const dot = document.getElementById('dot' + i); if (dot) dot.classList.toggle('active', i <= idx); }); }
 
-    function openSurah(id) {
-        showPage('surahView');
-        const surah = quranData.find(s => s.id === id);
-        if (surah) {
-            document.getElementById('surahMeta').innerText = `ترتيبها: ${surah.id} | آياتها: ${surah.verses.length}`;
-            let basmalah = (id !== 1 && id !== 9) ? `<p class="text-center text-2xl text-emerald-600 dark:text-emerald-400 mb-6 font-serif">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>` : '';
-            let versesText = surah.verses.map(v => `${v.text} <span class="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-lg mx-1">﴿${v.id}
-            } ﴿${v.id}﴾</span>`).join(' ');
-            
-            document.getElementById('surahContent').innerHTML = `
-                <h2 class="text-center mb-1 text-emerald-800 dark:text-emerald-400 font-bold text-2xl font-serif">سورة ${surah.name}</h2>
-                <div class="w-24 h-0.5 bg-emerald-200 dark:bg-emerald-800 mx-auto mb-6"></div>
-                ${basmalah}
-                <div class="leading-loose text-right select-text text-gray-800 dark:text-gray-100 p-2">${versesText}</div>
-            `;
-        }
-    }
-
-    function filterSurahs() {
-        const query = document.getElementById('searchSurah').value.trim();
-        const filtered = quranData.filter(s => s.name.includes(query));
-        renderIndex(filtered);
-    }
-
-    function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
-
-    function init() {
-        const now = new Date();
-        document.getElementById('todayDate').innerText = now.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        loadQuranData();
-    }
-
-    init();
+/* ══════════════════════════════
+   التهيئة الرئيسية
+══════════════════════════════ */
+function init() {
+  const now   = new Date(); const days  = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {day:'numeric',month:'long',year:'numeric'}).format(now);
+  const miladi= new Intl.DateTimeFormat('ar-SA-u-ca-gregory', {day:'numeric',month:'long',year:'numeric'}).format(now);
+  document.getElementById('fullDate').innerHTML = `${days[now.getDay()]} <br> ${hijri} <br> ${miladi}`;
+  document.getElementById('randomAyah').textContent = MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)];
+  if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+  loadStorage(); checkDailyReset(); initTasks(); applyProfileData(); renderMissedTasks(); renderAzkar(); updateStats(); loadSavedSettings(); buildFontSlider(); applyQuranFont();
+  window.history.replaceState({page:'homePage'}, '', '');
+}
+init();
 </script>
+<script> if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js?v=4').catch(() => {}); }); } </script>
 </body>
 </html>
+```
